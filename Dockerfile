@@ -5,7 +5,11 @@ RUN apt-get update && apt-get install -y git python3-dev gcc \
 
 COPY requirements.txt .
 
-RUN pip install --upgrade -r requirements.txt
+# RUN pip install -q git+https://github.com/fastai/fastcore --upgrade
+
+# RUN pip install -q git+https://github.com/fastai/fastai2 --upgrade
+
+RUN pip install -r requirements.txt
 
 RUN pip freeze
 

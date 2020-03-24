@@ -19,6 +19,40 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_headers=['X-Requested-With', 'Content-Type'])
 app.mount('/static', StaticFiles(directory='app/static'))
 
+def my_get_y(x): return path/x.name
+
+def gram_matrix(x):
+    n,c,h,w = x.size()
+    x = x.view(n, c, -1)
+    return (x @ x.transpose(1,2))/(c*h*w)
+
+class FeatureLoss(Module):
+    def __init__(self, m_feat, layer_ids, layer_wgts):
+        self.m_feat = m_feat
+        self.loss_features = [self.m_feat[i] for i in layer_ids]
+        self.hooks = hook_outputs(self.loss_features, detach=False)
+        self.wgts = layer_wgts
+        self.metric_names = ['pixel',] + [f'feat_{i}' for i in range(len(layer_ids))
+              ] + [f'gram_{i}' for i in range(len(layer_ids))]
+
+    def make_features(self, x, clone=False):
+        self.m_feat(x)
+        return [(o.clone() if clone else o) for o in self.hooks.stored]
+    
+    def forward(self, input, target, reduction='mean'):
+        out_feat = self.make_features(target, clone=True)
+        in_feat = self.make_features(input)
+        self.feat_losses = [base_loss(input,target,reduction=reduction)]
+        self.feat_losses += [base_loss(f_in, f_out,reduction=reduction)*w
+                             for f_in, f_out, w in zip(in_feat, out_feat, self.wgts)]
+        self.feat_losses += [base_loss(gram_matrix(f_in), gram_matrix(f_out),reduction=reduction)*w**2 * 5e3
+                             for f_in, f_out, w in zip(in_feat, out_feat, self.wgts)]
+        if reduction=='none': 
+            self.feat_losses = [f.mean(dim=[1,2,3]) for f in self.feat_losses[:4]] + [f.mean(dim=[1,2]) for f in self.feat_losses[4:]]
+        for n,l in zip(self.metric_names, self.feat_losses): setattr(self, n, l)
+        return sum(self.feat_losses)
+    
+    def __del__(self): self.hooks.remove()
 
 async def download_file(url, dest):
     if dest.exists(): return
@@ -32,18 +66,21 @@ async def download_file(url, dest):
 async def async_setup_learner():
     # await download_file(export_file_url, path / export_file_name)
     try:
+        learn = torch.load(path/export_file_name, map_location=torch.device('cpu'))
+        print("Model loaded")
+        learn.dls.device = 'cpu'
         dblock = DataBlock(blocks=(ImageBlock, ImageBlock),
                    get_items=get_image_files,
-#                   get_y=lambda x: return 0,
+                   get_y=my_get_y,
                    splitter=RandomSplitter(),
-                   batch_tfms=[*aug_transforms(max_zoom=2.), Normalize.from_stats(*imagenet_stats)])
-        dbunch_mr = dblock.dataloaders(path, bs=1, val_bs=1, path=path,
-                             batch_tfms=[*aug_transforms(), Normalize.from_stats(*imagenet_stats)])         
+                   batch_tfms=[Normalize.from_stats(*imagenet_stats)]
+                   )
+        dbunch_mr = dblock.dataloaders(path, bs=1, val_bs=1, path=path)#,
+                             #batch_tfms=[Normalize.from_stats(*imagenet_stats)])         
         dbunch_mr.c = 3
-        learn = unet_learner(dls, arch, loss_func=feat_loss, metrics=LossMetrics(feat_loss.metric_names),
-                         config=unet_config(blur=True, norm_type=NormType.Weight))        
-        learn = torch.load(path/export_file_name, map_location=torch.device('cpu'))
-        learn.dls.device = 'cpu'
+        # learn = unet_learner(dls, arch, loss_func=feat_loss, metrics=LossMetrics(feat_loss.metric_names),
+                         # config=unet_config(blur=True, norm_type=NormType.Weight))        
+
         learn.dls = dbunch_mr
         return learn
     except RuntimeError as e:
