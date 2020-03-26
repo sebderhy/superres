@@ -36,12 +36,14 @@ async def async_setup_learner():
                    get_y= lambda x:x,
                    batch_tfms=[Normalize.from_stats(*imagenet_stats)]
                    )
-        dbunch_mr = dblock.dataloaders(path, bs=1, val_bs=1, path=path, batch_tfms=[Normalize.from_stats(*imagenet_stats)])         
+        dbunch_mr = dblock.dataloaders(path, bs=1, val_bs=1, 
+                    path=path, batch_tfms=[Normalize.from_stats(*imagenet_stats)])         
         dbunch_mr.c = 3        
 
         learn = unet_learner(dbunch_mr, resnet34, loss_func=F.l1_loss, 
                      config=unet_config(blur=True, norm_type=NormType.Weight))
-        learn.load(path/export_file_name)
+        print(export_file_name)
+        learn.load(export_file_name)
         print("Model loaded")
         learn.dls.device = 'cpu'
         learn.dls = dbunch_mr
