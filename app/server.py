@@ -10,7 +10,7 @@ from starlette.responses import HTMLResponse, JSONResponse, FileResponse
 from starlette.staticfiles import StaticFiles
 import tempfile
 
-export_file_url = '' ## TODO: Put model on GDrive and put the DL URL Here
+export_file_url = 'https://www.googleapis.com/drive/v3/files/1IaC0PHCnCtsqy2K-B-uYiwIWm0PTtN3C?alt=media&key=AIzaSyBvJeR_YIf7U2wpuDX4Pbw2XntdEU1moxk' 
 export_file_name = 'models/superres-1b.pkl'
 
 path = Path(__file__).parent
@@ -64,7 +64,7 @@ async def download_file(url, dest):
 
 
 async def async_setup_learner():
-    # await download_file(export_file_url, path / export_file_name)
+    await download_file(export_file_url, path / export_file_name)
     try:
         learn = torch.load(path/export_file_name, map_location=torch.device('cpu'))
         print("Model loaded")
