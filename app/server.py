@@ -10,7 +10,7 @@ from starlette.responses import HTMLResponse, JSONResponse, FileResponse
 from starlette.staticfiles import StaticFiles
 import tempfile
 
-export_file_name = 'models/superres-1b.pth'
+export_file_name = 'superres-1b'
 
 path = Path(__file__).parent
 
