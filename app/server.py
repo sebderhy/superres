@@ -41,10 +41,9 @@ async def async_setup_learner():
 
         learn = unet_learner(dbunch_mr, resnet34, loss_func=F.l1_loss, 
                      config=unet_config(blur=True, norm_type=NormType.Weight))
-        learn.load(path/export_file_name, map_location=torch.device('cpu'))
+        learn.load(path/export_file_name)
         print("Model loaded")
         learn.dls.device = 'cpu'
-
         learn.dls = dbunch_mr
         return learn
     except RuntimeError as e:
@@ -83,5 +82,5 @@ def img2img(file: UploadFile = File(...)):
 
 if __name__ == '__main__':
     if 'serve' in sys.argv:
-        uvicorn.run(app=app, host='0.0.0.0', port=5000, log_level="info")
+        uvicorn.run(app=app, host='0.0.0.0', port=80, log_level="info")
         

@@ -17,6 +17,6 @@ COPY app app/
 
 RUN python app/server.py
 
-EXPOSE 5000
+EXPOSE 80
 
 CMD ["python", "app/server.py", "serve"]
