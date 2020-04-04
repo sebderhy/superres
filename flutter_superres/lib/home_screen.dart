@@ -34,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     String base = "http://fastaiserve.com/";
 
-    var uri = Uri.parse(base + 'superres-1b/img2img/');
+    var uri = Uri.parse(base + 'superres-2b/img2img/');
 
     var request = new http.MultipartRequest("POST", uri);
     var multipartFile = new http.MultipartFile('file', stream, length,
@@ -73,10 +73,11 @@ class _HomeScreenState extends State<HomeScreen> {
         comment = "";
         break;
       case STATUS_IMAGE_LOADED:
-        comment = "Enhancing image";
+        comment = "Enhancing image...";
         break;
       case STATUS_FINISHED:
-        comment = "Here is the enhanced image!";
+        comment =
+            "Here is the enhanced image! Tap on it to see it in full screen. Then tap to switch between the original and enhanced version";
         break;
     }
 
