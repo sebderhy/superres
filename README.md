@@ -3,12 +3,14 @@ A super-resolution mobile app built with Flutter. The superresolution algorithm 
 
 ## Description
 
-* A web API code that can be deployed on any cloud, which performs the superresolution. If you want to use the web-API running this algorithm, please contact me.
+* A web API code that can be deployed on any cloud, which performs the superresolution. 
 * A mobile app built with [Flutter](https://github.com/flutter/flutter) that enables you to take a picture (from the library or with the camera), enhance it by calling the model above, and then compare it with the initial one.
+
+If you want the app without compiling it or use the API running the algorithm, please contact me.
 
 ## Known issue
 
-Unfortunately, the web API is crashing when it is send heavy images, which unfortunately is what most smartphones' camera provides. For this reason, it was particularly hard for me to use the algorithm directly on images taken with my smartphone. If someone has any idea on how to fix this, please let me know!
+Unfortunately, the web API doesn't support heavy images, which unfortunately is what most smartphones' camera provides. For this reason, it was particularly hard for me to use the algorithm directly on images taken with my smartphone. If someone has any idea on how to fix this, please let me know!
 
 ## Example
 
