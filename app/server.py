@@ -1,5 +1,8 @@
 import aiohttp
 from fastapi import FastAPI, File, UploadFile
+from utils import *
+from useless import * # Functions that are necessary to load the model but useless. Hopefully, fastai will fix this.
+from superres import *
 import asyncio
 import uvicorn
 from fastai2.vision.all import *
@@ -10,7 +13,8 @@ from starlette.responses import HTMLResponse, JSONResponse, FileResponse
 from starlette.staticfiles import StaticFiles
 import tempfile
 
-export_file_name = 'superres-1b'
+export_file_url = '' 
+export_file_name = 'models/superres-2b.pkl'
 
 path = Path(__file__).parent
 
@@ -19,34 +23,13 @@ app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_headers=['X-Reques
 app.mount('/static', StaticFiles(directory='app/static'))
 
 
-async def download_file(url, dest):
-    if dest.exists(): return
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            data = await response.read()
-            with open(dest, 'wb') as f:
-                f.write(data)
-
-
 async def async_setup_learner():
     # await download_file(export_file_url, path / export_file_name)
     try:
-        dblock = DataBlock(blocks=(ImageBlock, ImageBlock),
-                   get_items=get_image_files,
-                   get_y= lambda x:x,
-                   batch_tfms=[Normalize.from_stats(*imagenet_stats)]
-                   )
-        dbunch_mr = dblock.dataloaders(path, bs=1, val_bs=1, 
-                    path=path, batch_tfms=[Normalize.from_stats(*imagenet_stats)])         
-        dbunch_mr.c = 3        
-
-        learn = unet_learner(dbunch_mr, resnet34, loss_func=F.l1_loss, 
-                     config=unet_config(blur=True, norm_type=NormType.Weight))
-        print(export_file_name)
-        learn.load(export_file_name)
+        learn = torch.load(path/export_file_name, map_location=torch.device('cpu'))
         print("Model loaded")
         learn.dls.device = 'cpu'
-        learn.dls = dbunch_mr
+        learn=SuperresHelper.setup_dataloader(learn)
         return learn
     except RuntimeError as e:
         if len(e.args) > 0 and 'CPU-only machine' in e.args[0]:
@@ -55,6 +38,7 @@ async def async_setup_learner():
             raise RuntimeError(message)
         else:
             raise
+
 
 loop = asyncio.get_event_loop()
 tasks = [asyncio.ensure_future(async_setup_learner())]
@@ -66,7 +50,6 @@ loop.close()
 async def homepage(request):
     html_file = path / 'view' / 'index.html'
     return HTMLResponse(html_file.open().read())
-
 
 
 @app.post("/img2img/")
