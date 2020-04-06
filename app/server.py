@@ -13,7 +13,7 @@ from starlette.responses import HTMLResponse, JSONResponse, FileResponse
 from starlette.staticfiles import StaticFiles
 import tempfile
 
-export_file_url = '' 
+export_file_url = 'https://fastdeploy2.s3.amazonaws.com/fastai-models/superres-2b.pkl' 
 export_file_name = 'models/superres-2b.pkl'
 
 path = Path(__file__).parent
@@ -24,8 +24,11 @@ app.mount('/static', StaticFiles(directory='app/static'))
 
 
 async def async_setup_learner():
-    # await download_file(export_file_url, path / export_file_name)
+    print("Downloading model...")
+    await download_file(export_file_url, path / export_file_name)
+    print("Model downloaded")
     try:
+        print("Loading model")
         learn = torch.load(path/export_file_name, map_location=torch.device('cpu'))
         print("Model loaded")
         learn.dls.device = 'cpu'
