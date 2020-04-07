@@ -2,8 +2,9 @@ from fastai2.vision.all import *
 import aiohttp
 from starlette.responses import HTMLResponse, JSONResponse, FileResponse
 
-export_file_name = 'models/superres-1b.pkl'
-export_file_url = ''
+export_file_url = 'https://fastdeploy2.s3.amazonaws.com/fastai-models/superres-2b.pkl' 
+export_file_name = 'models/superres-2b.pkl'
+
 path = Path(__file__).parent
 
 async def download_file(url, dest):
