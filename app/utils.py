@@ -44,3 +44,11 @@ def safe_predict(learn,img_bytes):
     except RuntimeError as e:
         print(e)
         raise e   
+
+def isOdd(n): return n%2==1
+
+def evenify(t):
+    return t[isOdd(t.shape[0]):,isOdd(t.shape[1]):,:]
+
+def to_channel_first(tensor): return tensor.permute(2,0,1)
+def to_channel_last(tensor): return tensor.permute(1,2,0)

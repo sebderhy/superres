@@ -13,8 +13,7 @@ from starlette.responses import HTMLResponse, JSONResponse, FileResponse
 from starlette.staticfiles import StaticFiles
 import tempfile
 
-export_file_url = 'https://fastdeploy2.s3.amazonaws.com/fastai-models/superres-2b.pkl' 
-export_file_name = 'models/superres-2b.pkl'
+
 
 path = Path(__file__).parent
 
@@ -55,17 +54,30 @@ async def homepage(request):
     return HTMLResponse(html_file.open().read())
 
 
+def img2img_do(img_bytes):
+    # pred = learn.predict(img_bytes)
+    # img_out = pred[0]
+    # img_pil_out = PILImage.create(img_out)
+    # out_img_bytes=img_pil_out.to_bytes_format()
+
+    img_pil = Image.open(BytesIO(img_bytes))
+    res_t = DivAndConqImg.predict(img_pil, learn)
+    out_img_bytes = DivAndConqImg.outImgFromPred(res_t)
+
+    with tempfile.NamedTemporaryFile(mode="w+b", suffix=".png", delete=False) as FOUT:
+        FOUT.write(out_img_bytes)
+        return FileResponse(FOUT.name, media_type="image/png")    
+
 @app.post("/img2img/")
 def img2img(file: UploadFile = File(...)):
     img_bytes = (file.file.read())
-    pred = learn.predict(img_bytes)
-    img_out = pred[0]
-    img_pil_out = PILImage.create(img_out)
-    # out_img_bytes = image_to_byte_array(img_pil_out)
-    out_img_bytes=img_pil_out.to_bytes_format()
-    with tempfile.NamedTemporaryFile(mode="w+b", suffix=".png", delete=False) as FOUT:
-        FOUT.write(out_img_bytes)
-        return FileResponse(FOUT.name, media_type="image/png")
+    return img2img_do(img_bytes)
+
+
+@app.post("/urlimg2img/")
+def urlimg2img(url: str):
+    response = requests.get(url)
+    return img2img_do(response.content)
 
 
 if __name__ == '__main__':

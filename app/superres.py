@@ -30,3 +30,57 @@ class SuperresHelper:
         dbunch_mr.c = 3        
         learn.dls = dbunch_mr
         return learn
+
+class DivAndConqImg:
+    @staticmethod
+    def predict(img_pil, learn, buffer_lines = 20):
+        t = TensorImage(img_pil)
+        t2 = evenify(t)
+        ul,bl,ur,br=DivAndConqImg.split_tensimg_in_4(t2, buffer_lines)
+        crops = [ul,bl,ur,br]
+        decs = DivAndConqImg.predict_on_img_list(crops,learn)
+        res_t = DivAndConqImg.merge_to_output(decs,t2.shape[0],t2.shape[1], buffer_lines)
+        return res_t
+    
+    @staticmethod
+    def split_tensimg_in_4(t, buf, channel_first=False):
+        rows,cols,_ = t.shape
+        if channel_first:
+            ul=t[:rows//2+buf,:cols//2+buf,:].permute(2,0,1)
+            bl=t[rows//2-buf:rows,:cols//2+buf,:].permute(2,0,1)
+            ur=t[:rows//2+buf,cols//2-buf:cols,:].permute(2,0,1)
+            br=t[rows//2-buf:rows,cols//2-buf:cols,:].permute(2,0,1)
+        else:
+            ul=t[:rows//2+buf,:cols//2+buf,:]
+            bl=t[rows//2-buf:rows,:cols//2+buf,:]
+            ur=t[:rows//2+buf,cols//2-buf:cols,:]
+            br=t[rows//2-buf:rows,cols//2-buf:cols,:]
+        return ul,bl,ur,br
+
+    @staticmethod
+    def stack_4_images_into_batch(ul,bl,ur,br):
+        batch = torch.stack([ul,bl,ur,br])
+        print(batch.shape)
+        return batch
+
+    @staticmethod
+    def predict_on_img_list(items,learn):
+        seb_dl = learn.dls.test_dl(items, rm_type_tfms=None)
+        inp,_,_,dec_preds = learn.get_preds(dl=seb_dl, with_input=True, with_decoded=True)
+        decs = learn.dls.decode_batch((*tuplify(inp),*tuplify(dec_preds)))[:]
+        return decs
+
+    @staticmethod
+    def merge_to_output(decs, rows, cols, buf):
+        res_t = torch.empty(3,rows,cols)
+        res_t[:,:rows//2,:cols//2]=decs[0][1][:,:rows//2,:cols//2]
+        res_t[:,rows//2:rows,:cols//2]=decs[1][1][:,buf:,:cols//2]
+        res_t[:,:rows//2,cols//2:cols]=decs[2][1][:,:rows//2,buf:]
+        res_t[:,rows//2:rows,cols//2:cols]=decs[3][1][:,buf:,buf:]
+        return res_t
+
+    @staticmethod
+    def outImgFromPred(res_t):
+        pil_img_out = PILImage.create(TensorImage(res_t.byte()))
+        out_img_bytes = pil_img_out.to_bytes_format()
+        return out_img_bytes
