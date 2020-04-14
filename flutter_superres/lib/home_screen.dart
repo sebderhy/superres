@@ -32,9 +32,9 @@ class _HomeScreenState extends State<HomeScreen> {
         new http.ByteStream(DelegatingStream.typed(imageFile.openRead()));
     var length = await imageFile.length();
 
-    String base = "http://superres-lb-1588345518.us-east-1.elb.amazonaws.com/";
+    String base = "http://fastaiserve.com/";
 
-    var uri = Uri.parse(base + 'img2img/');
+    var uri = Uri.parse(base + 'superres-2b/img2img/');
 
     var request = new http.MultipartRequest("POST", uri);
     var multipartFile = new http.MultipartFile('file', stream, length,
